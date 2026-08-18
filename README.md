@@ -1,75 +1,75 @@
 # screen-discord-brasil
 
-Prova de conceito (PoC) que demonstra que o bloqueio de **compartilhamento de tela / vídeo** aplicado pelo Discord a contas brasileiras é validado **no client-side**, e não no servidor.
+A proof of concept (PoC) showing that the **screen sharing / video** restriction Discord applies to Brazilian accounts is enforced **client-side**, not on the server.
 
-O script abaixo cria um *override* local do experimento `2026-08-video-guard` — o mesmo mecanismo que o próprio client do Discord usa para decidir se a feature fica ligada ou desligada — e reabilita o recurso sem tocar em nada do lado do servidor.
+The script below creates a local override for the `2026-08-video-guard` experiment — the very same mechanism Discord's own client uses to decide whether the feature is on or off — and re-enables the feature without touching anything server-side.
 
-> **Resumo técnico:** se um flag de experimento entregue ao client é suficiente para reverter a restrição, a restrição não é um controle de segurança. É apenas UI.
-
----
-
-## ⚠️ Aviso
-
-Este repositório existe para fins **educacionais e de pesquisa em segurança**, para documentar onde a validação acontece.
-
-- Rodar client mods e alterar o client do Discord **viola os Termos de Serviço** do Discord e pode resultar em suspensão da conta.
-- Use por sua conta e risco, apenas na sua própria conta.
-- O autor não se responsabiliza por qualquer consequência do uso.
+> **In short:** if a feature flag shipped to the client is enough to reverse the restriction, the restriction is not a security control. It is UI.
 
 ---
 
-## Pré-requisitos
+## Disclaimer
 
-| Item | Detalhe |
+This repository exists for **educational and security research purposes**, to document where the validation actually happens.
+
+- Running client mods and modifying the Discord client **violates Discord's Terms of Service** and may get your account suspended.
+- Use at your own risk, and only on your own account.
+- The author takes no responsibility for any consequences of using this.
+
+---
+
+## Requirements
+
+| Item | Details |
 |---|---|
-| **Discord Desktop** | O client instalado (não a versão do navegador, a não ser que use a extensão do Vencord) |
-| **[Vencord](https://vencord.dev/)** | Necessário — ele expõe o objeto global `Vencord` com acesso ao Webpack interno do Discord |
-| **Conta brasileira** | Uma conta que já esteja com o bloqueio de tela/vídeo ativo (senão não há o que testar) |
+| **Discord Desktop** | The installed client (not the browser version, unless you use the Vencord browser extension) |
+| **[Vencord](https://vencord.dev/)** | Required — it exposes the global `Vencord` object with access to Discord's internal Webpack |
+| **Brazilian account** | An account that already has the screen/video restriction active (otherwise there is nothing to test) |
 
-### Instalando o Vencord
+### Installing Vencord
 
-1. Baixe o instalador oficial: **https://vencord.dev/download**
-2. Feche o Discord completamente (verifique a bandeja do sistema / `Cmd+Q` no macOS).
-3. Rode o instalador → **Install Vencord** → selecione a sua instalação do Discord (Stable / PTB / Canary).
-4. Abra o Discord novamente. Se aparecer a aba **Vencord** em *Configurações do Usuário*, está instalado.
+1. Download the official installer: **https://vencord.dev/download**
+2. Fully quit Discord (check the system tray / `Cmd+Q` on macOS).
+3. Run the installer → **Install Vencord** → pick your Discord installation (Stable / PTB / Canary).
+4. Open Discord again. If a **Vencord** tab shows up in *User Settings*, it is installed.
 
-> Nunca instale client mods de fontes que não sejam o site oficial do Vencord.
+> Never install client mods from anywhere other than the official Vencord website.
 
 ---
 
-## Como testar
+## How to test
 
-### 1. Confirme que o bloqueio está ativo
+### 1. Confirm the restriction is active
 
-Antes de rodar qualquer coisa, entre em um canal de voz e tente iniciar o compartilhamento de tela / câmera.
-Você deve ver o bloqueio (botão desabilitado, aviso de restrição regional, etc.). **Tire um print** — é a sua evidência do "antes".
+Before running anything, join a voice channel and try to start screen sharing or turn on your camera.
+You should hit the restriction (disabled button, regional restriction notice, etc.). **Take a screenshot** — that is your "before" evidence.
 
-### 2. Abra o DevTools
+### 2. Open DevTools
 
-Com o Vencord instalado, o DevTools do Electron fica liberado:
+With Vencord installed, Electron's DevTools are unlocked:
 
-| Sistema | Atalho |
+| OS | Shortcut |
 |---|---|
 | Windows / Linux | `Ctrl` + `Shift` + `I` |
 | macOS | `Cmd` + `Option` + `I` |
 
-Se o atalho não funcionar, vá em **Configurações → Vencord → Enable React DevTools / Open DevTools**, ou rode o Discord com a flag `--remote-debugging-port=9222`.
+If the shortcut does nothing, go to **Settings → Vencord → Enable React DevTools / Open DevTools**, or launch Discord with the `--remote-debugging-port=9222` flag.
 
-Vá até a aba **Console**.
+Switch to the **Console** tab.
 
-### 3. Libere o paste no console
+### 3. Allow pasting in the console
 
-O Chrome/Electron bloqueia colar no console na primeira vez por segurança (proteção contra self-XSS). Ele vai pedir para você digitar:
+Chrome/Electron blocks pasting into the console the first time as a self-XSS protection. It will ask you to type:
 
 ```
 allow pasting
 ```
 
-Digite isso, dê `Enter`, e depois cole o script.
+Type that, hit `Enter`, then paste the script.
 
-### 4. Cole o script
+### 4. Paste the script
 
-Copie todo o conteúdo de [`script.js`](script.js) e cole no console:
+Copy the full contents of [`script.js`](script.js) into the console:
 
 ```js
 (() => {
@@ -88,36 +88,36 @@ Copie todo o conteúdo de [`script.js`](script.js) e cole no console:
 })();
 ```
 
-Pressione `Enter`.
+Press `Enter`.
 
-### 5. Resultado esperado
+### 5. Expected result
 
 ```
 enabled!
 ```
 
-Se aparecer `enabled!`, o override foi aplicado. Volte para o canal de voz e tente compartilhar a tela / ligar a câmera novamente.
+If you see `enabled!`, the override was applied. Go back to the voice channel and try screen sharing / camera again.
 
-**Funcionou = o bloqueio era client-side.** Nenhuma requisição foi feita, nenhum header foi alterado, nenhum endpoint foi burlado — só um flag local.
+**If it works, the restriction was client-side.** No request was modified, no header was tampered with, no endpoint was bypassed — just a local flag.
 
 ---
 
-## Como o script funciona
+## How the script works
 
 ```js
 Vencord.Webpack.findModuleId("2026-08-video-guard")
 ```
-Varre o bundle Webpack do Discord procurando o módulo cujo código-fonte contém a string `2026-08-video-guard`. **Ponto-chave:** a definição do experimento está *dentro do JavaScript entregue ao seu navegador*.
+Scans Discord's Webpack bundle for the module whose source contains the string `2026-08-video-guard`. **Key point:** the experiment definition lives *inside the JavaScript shipped to your browser*.
 
 ```js
 Vencord.Webpack.wreq(id)
 ```
-`wreq` é o `__webpack_require__` interno. Carrega o módulo encontrado e devolve seus exports.
+`wreq` is the internal `__webpack_require__`. It loads the module that was found and returns its exports.
 
 ```js
 Object.values(...).find(x => x?.definition?.name === "2026-08-video-guard")
 ```
-Procura entre os exports o objeto de definição do experimento. Se não achar, o script joga `not found` — isso significa que o nome do experimento mudou (ver [Troubleshooting](#troubleshooting)).
+Looks through the exports for the experiment definition object. If it is not there, the script throws `not found` — which means the experiment name changed (see [Troubleshooting](#troubleshooting)).
 
 ```js
 Vencord.Webpack.Common.FluxDispatcher.dispatch({
@@ -126,19 +126,57 @@ Vencord.Webpack.Common.FluxDispatcher.dispatch({
     variantId: 0
 });
 ```
-Dispara uma action na store Flux do próprio Discord. `APEX_EXPERIMENT_SESSION_OVERRIDE_CREATE` é o mecanismo **nativo** de override de experimentos (o mesmo usado pelo painel interno de staff). `variantId: 0` é o bucket de controle — ou seja, "feature desligada", que no caso do *video guard* significa **sem bloqueio**.
+Dispatches an action on Discord's own Flux store. `APEX_EXPERIMENT_SESSION_OVERRIDE_CREATE` is the **native** experiment override mechanism (the same one used by the internal staff panel). `variantId: 0` is the control bucket — meaning "feature off", which for the video guard means **no restriction**.
 
-Não há patch, não há hook, não há monkey-patching. O script apenas usa a API que já existe no client.
+No patching, no hooking, no monkey-patching. The script simply uses an API that already ships in the client.
 
 ---
 
-## Como reverter
+## Persistence
 
-O override é **por sessão** e não é persistido. Basta:
+The override lives in memory only. There is nothing to cache or persist — what has to survive a reload is the **act of reapplying it**.
 
-- `Ctrl` + `R` (recarregar o client), **ou**
-- fechar e abrir o Discord, **ou**
-- disparar o inverso no console:
+### Option 1 — Vencord userplugin (recommended)
+
+[`vencord-plugin/index.ts`](vencord-plugin/index.ts) reapplies the override on every gateway connection:
+
+```ts
+flux: {
+    CONNECTION_OPEN: disableGuard
+},
+start: disableGuard
+```
+
+`CONNECTION_OPEN` matters here. On startup, the experiment store is only populated after the gateway authenticates and the server sends the assigned buckets. Dispatching before that gets overwritten. Hooking `CONNECTION_OPEN` runs after the connection is established — and runs again on every reconnect, so `Ctrl+R`, network drops and laptop sleep are all covered.
+
+Userplugins only compile in a Vencord build made from source — the official installer will not take them:
+
+```bash
+git clone https://github.com/Vendicated/Vencord && cd Vencord
+pnpm i
+mkdir -p src/userplugins/VideoGuardOff
+cp /path/to/vencord-plugin/index.ts src/userplugins/VideoGuardOff/index.ts
+pnpm build
+pnpm inject
+```
+
+Then enable **VideoGuardOff** under Settings → Vencord → Plugins. Replace `authors: [Devs.Ven]` with `[{ name: "your-name", id: 0n }]`.
+
+### Option 2 — DevTools snippet
+
+DevTools → **Sources** tab → **Snippets** panel → **New snippet** → paste the script → save.
+
+The snippet is stored in your DevTools profile permanently. After each reload it is one `Ctrl+Enter` away. Not automatic, but it removes the copy-paste and the `allow pasting` step.
+
+---
+
+## How to revert
+
+The override is **per session** and is not persisted. Just:
+
+- press `Ctrl` + `R` (reload the client), **or**
+- quit and reopen Discord, **or**
+- dispatch the inverse in the console:
 
 ```js
 Vencord.Webpack.Common.FluxDispatcher.dispatch({
@@ -147,49 +185,51 @@ Vencord.Webpack.Common.FluxDispatcher.dispatch({
 });
 ```
 
+If you installed the userplugin, disable it under Settings → Vencord → Plugins first, otherwise it reapplies on the next reconnect.
+
 ---
 
 ## Troubleshooting
 
-| Erro / sintoma | Causa provável | Solução |
+| Error / symptom | Likely cause | Fix |
 |---|---|---|
-| `Vencord is not defined` | Vencord não instalado, ou você está no console do navegador sem a extensão | Instale o Vencord e reinicie o Discord |
-| `Uncaught Error: not found` | O nome do experimento mudou (ex.: `2026-09-...`) | Ver "Descobrindo o novo nome" abaixo |
-| Colar não funciona | Proteção contra self-XSS | Digite `allow pasting` no console primeiro |
-| Rodou `enabled!` mas o botão continua bloqueado | O componente já foi montado com o valor antigo | `Ctrl+R` **não** — isso limpa o override. Saia e entre no canal de voz de novo |
-| Atalho do DevTools não abre | Build do Discord sem DevTools liberado | Configurações → Vencord → *Open DevTools* |
+| `Vencord is not defined` | Vencord not installed, or you are in a browser console without the extension | Install Vencord and restart Discord |
+| `Uncaught Error: not found` | The experiment name changed (e.g. `2026-09-...`) | See "Finding the new name" below |
+| Pasting does nothing | Self-XSS protection | Type `allow pasting` in the console first |
+| It printed `enabled!` but the button is still blocked | The component was already mounted with the old value | Do **not** press `Ctrl+R` — that clears the override. Leave and rejoin the voice channel |
+| DevTools shortcut does not open | Discord build without DevTools unlocked | Settings → Vencord → *Open DevTools* |
 
-### Descobrindo o novo nome do experimento
+### Finding the new name
 
-Se o Discord renomear o experimento, ache a nova string no console:
+If Discord renames the experiment, find the new string from the console:
 
 ```js
-// lista todos os experimentos carregados no client
+// list every experiment loaded in the client
 Object.keys(Vencord.Webpack.Common.FluxDispatcher._actionHandlers._dependencyGraph.nodes)
 ```
 
-Ou, mais direto — procure por padrões de data no bundle:
+Or search the bundle directly:
 
 ```js
 Vencord.Webpack.findAll?.(m => JSON.stringify(m)?.includes("video-guard"))
 ```
 
-Depois é só trocar as duas ocorrências de `2026-08-video-guard` no script.
+Then replace both occurrences of `2026-08-video-guard` in the script.
 
 ---
 
-## Por que isso importa
+## Why this matters
 
-Restrições regionais implementadas como *feature flags* do client são **cosméticas**. Elas informam a UI, não protegem nada:
+Regional restrictions implemented as client feature flags are **cosmetic**. They inform the UI, they do not protect anything:
 
-1. A definição do experimento é enviada para o client.
-2. O client decide sozinho se mostra ou não a feature.
-3. O mecanismo de override é parte do próprio client.
+1. The experiment definition is shipped to the client.
+2. The client decides on its own whether to show the feature.
+3. The override mechanism is part of that same client.
 
-Um controle real precisaria ser aplicado no servidor de voz/mídia — recusando a stream no momento em que ela é publicada, não escondendo o botão. Enquanto a decisão morrer no client, qualquer pessoa com o DevTools aberto reverte em uma linha.
+A real control would be enforced on the voice/media server — rejecting the stream at the moment it is published, not hiding the button. As long as the decision dies in the client, anyone with DevTools open reverses it in one line.
 
 ---
 
-## Licença
+## License
 
-MIT — veja [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).
