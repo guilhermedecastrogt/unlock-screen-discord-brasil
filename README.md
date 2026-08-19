@@ -26,6 +26,8 @@ This repository exists for **educational and security research purposes**, to do
 | **[Vencord](https://vencord.dev/)** | Required — it exposes the global `Vencord` object with access to Discord's internal Webpack |
 | **Brazilian account** | An account that already has the screen/video restriction active (otherwise there is nothing to test) |
 
+> Vencord is only needed for the console/userplugin method. The Windows launcher script ([`new_script.cmd`](#alternative--new_scriptcmd-windows-no-vencord)) works on a vanilla Discord install.
+
 ### Installing Vencord
 
 1. Download the official installer: **https://vencord.dev/download**
@@ -167,6 +169,51 @@ Then enable **VideoGuardOff** under Settings → Vencord → Plugins. Replace `a
 DevTools → **Sources** tab → **Snippets** panel → **New snippet** → paste the script → save.
 
 The snippet is stored in your DevTools profile permanently. After each reload it is one `Ctrl+Enter` away. Not automatic, but it removes the copy-paste and the `allow pasting` step.
+
+---
+
+## Alternative — `new_script.cmd` (Windows, no Vencord)
+
+[`new_script.cmd`](new_script.cmd) attacks the same restriction from the other side: instead of overriding the experiment after the client loads, it changes what the client sees **while it is starting up**.
+
+Discord resolves the regional restriction during startup/handshake. If the client boots through a proxy outside Brazil, it comes up without the restriction — and the proxy is no longer needed after that, because the decision was already made in memory.
+
+What the script does, in order:
+
+1. Kills any running `Discord.exe` / `DiscordPTB.exe` / `DiscordCanary.exe` — the override only works on a cold start.
+2. Enables the Windows system proxy (`HKCU\...\Internet Settings` → `ProxyEnable` / `ProxyServer`).
+3. Detects which build is installed under `%LOCALAPPDATA%` and launches it via `Update.exe --processStart`.
+4. Polls with PowerShell until the real client window is up (ignoring the updater window).
+5. Turns the proxy back off, so normal traffic goes out directly.
+6. Fires a Windows toast notification saying the bypass is done.
+
+### How to use
+
+Double-click `new_script.cmd` (or run it from `cmd`). No Vencord, no DevTools, no console. Discord opens by itself.
+
+The effect lasts for that session only — **close Discord and you have to run the script again.**
+
+### Changing the proxy
+
+The proxy is hardcoded on this line:
+
+```bat
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /v ProxyServer /t REG_SZ /d "181.39.25.196:8118" /f >nul
+```
+
+Replace `181.39.25.196:8118` with any HTTP proxy outside Brazil. Note that a public/free proxy is a third party sitting in front of your Discord login for the few seconds the client is starting up — prefer a proxy you control.
+
+If the script exits leaving the proxy enabled (e.g. you close the window during step 4), turn it off manually:
+
+```bat
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /v ProxyEnable /t REG_DWORD /d 0 /f
+```
+
+Or **Settings → Network & Internet → Proxy → Manual proxy setup → Off**.
+
+### Why this also proves the point
+
+The proxy is only up for the handful of seconds Discord takes to launch, and the actual screen share / video streams go out over your **real** connection. If the restriction were enforced on the media server, this would not work at all — the stream would be rejected the moment it is published, regardless of where the client claimed to be at startup.
 
 ---
 
